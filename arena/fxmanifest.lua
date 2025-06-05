@@ -17,10 +17,9 @@ client_scripts {
 }
 
 server_scripts {
-	'@vrp/lib/utils.lua',
-	'shared-side/config_server.lua',
-	'server-side/server.lua',
-	'mods/**/server.lua'
+        '@vrp/lib/utils.lua',
+        'server-side/server.lua',
+        'mods/**/server.lua'
 }
 
 shared_scripts {
