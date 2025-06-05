@@ -1,3 +1,9 @@
+-- Ensure vRP/vSERVER interfaces exist even if config_client didn't load first
+local Tunnel = module("vrp", "lib/Tunnel")
+local Proxy = module("vrp", "lib/Proxy")
+vRP = vRP or Proxy.getInterface("vRP")
+vSERVER = vSERVER or Tunnel.getInterface("mirtin_arena")
+
 local in_arena = 0
 local time_arena = 0
 local openedCoords
