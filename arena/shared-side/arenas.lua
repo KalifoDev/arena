@@ -1,5 +1,5 @@
-Wait(1000)
-config.arenas = {
+-- Lista de arenas disponíveis no servidor
+local arenas = {
     -- [1] = { 
     --     nome = "AIMLAB", -- Nome da Arena 
     --     aimlab = 'baloon',
@@ -497,3 +497,4 @@ config.arenas = {
     --     coords = {}
     -- },
 }
+return { arenas = arenas }
