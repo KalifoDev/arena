@@ -26,6 +26,24 @@ RegisterNetEvent("arena:playSound", function(url)
     SendReactMessage("playSound", url)
 end)
 
+-- Comando para abrir a interface da arena manualmente
+RegisterCommand("arena", function()
+    if in_arena == 0 and not IN_PVP then
+        local ped = PlayerPedId()
+        if GetEntityHealth(ped) > 101 then
+            local weapons = vRP.getWeapons()
+            if json.encode(weapons) == '[]' then
+                local coords = GetEntityCoords(ped)
+                openedCoords = coords
+                vSERVER._atualizarCoords(coords)
+                openNui()
+            else
+                TriggerEvent('Notify', 'negado', 'Você não pode entrar com arma na arena.', 3000)
+            end
+        end
+    end
+end)
+
 
 function giveAttachsToWeapon()
     local ped = PlayerPedId()
