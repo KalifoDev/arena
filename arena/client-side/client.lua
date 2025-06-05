@@ -265,15 +265,16 @@ end
 -- Atualizar função openNui para usar o formato padrão documentado no readme
 function openNui()
     local currentTime = GetGameTimer()
-    
+
     cachedArenas = vSERVER.showNuiArena()
-    
+
     if currentTime - lastRankTableTime >= 180000 then
         lastRankTableTime = currentTime
         rankData = vSERVER.CreateNewRankTable()
     end
-    
+
     SendStandardMessage("lobby:open", {})
+    sendNuiInfos()
     SetNuiFocus(true, true)
 end
 
