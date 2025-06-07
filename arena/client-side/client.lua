@@ -1,3 +1,9 @@
+-- Ensure vRP/vSERVER interfaces exist even if config_client didn't load first
+local Tunnel = module("vrp", "lib/Tunnel")
+local Proxy = module("vrp", "lib/Proxy")
+vRP = vRP or Proxy.getInterface("vRP")
+vSERVER = vSERVER or Tunnel.getInterface("mirtin_arena")
+
 local in_arena = 0
 local time_arena = 0
 local openedCoords
@@ -24,6 +30,39 @@ end)
 
 RegisterNetEvent("arena:playSound", function(url)
     SendReactMessage("playSound", url)
+end)
+
+-- Comando para abrir a interface da arena manualmente
+RegisterCommand("arena", function()
+    if in_arena == 0 and not IN_PVP then
+        local ped = PlayerPedId()
+        if GetEntityHealth(ped) > 101 then
+            local weapons = vRP.getWeapons()
+            if json.encode(weapons) == '[]' then
+                local coords = GetEntityCoords(ped)
+                openedCoords = coords
+                vSERVER._atualizarCoords(coords)
+                openNui()
+            else
+                TriggerEvent('Notify', 'negado', 'Você não pode entrar com arma na arena.', 3000)
+            end
+        end
+    end
+end)
+
+-- Comando para ir ao modo Aimlab (apenas teleporte simples)
+RegisterCommand("aimlab", function()
+    if in_arena == 0 and not IN_PVP then
+        local ped = PlayerPedId()
+        if GetEntityHealth(ped) > 101 then
+            DoScreenFadeOut(500)
+            Citizen.Wait(500)
+            SetEntityCoordsNoOffset(ped, 6976.78, 916.68, 763.63, false, false, false)
+            SetEntityHeading(ped, 183.55)
+            Citizen.Wait(500)
+            DoScreenFadeIn(500)
+        end
+    end
 end)
 
 
@@ -241,15 +280,16 @@ end
 -- Atualizar função openNui para usar o formato padrão documentado no readme
 function openNui()
     local currentTime = GetGameTimer()
-    
+
     cachedArenas = vSERVER.showNuiArena()
-    
+
     if currentTime - lastRankTableTime >= 180000 then
         lastRankTableTime = currentTime
         rankData = vSERVER.CreateNewRankTable()
     end
-    
+
     SendStandardMessage("lobby:open", {})
+    sendNuiInfos()
     SetNuiFocus(true, true)
 end
 
@@ -476,7 +516,7 @@ DrawTextInScreen = function(text,font,x,y,scale,r,g,b,a)
 end
 
 -- Callbacks documentados no readme
-RegisterNuiCallback("getItems", function(data, cb)
+RegisterNUICallback("getItems", function(data, cb)
     local type = data.type
     if type == "arenas" then
         -- local arenas = vSERVER.getArenas() or cachedArenas or {}
@@ -488,7 +528,7 @@ RegisterNuiCallback("getItems", function(data, cb)
     end
 end)
 
-RegisterNuiCallback("updateItems", function(data, cb)
+RegisterNUICallback("updateItems", function(data, cb)
     local type = data.type
     if type == "arenas" then
         local arenas = vSERVER.getArenas() or cachedArenas or {}
@@ -500,7 +540,7 @@ RegisterNuiCallback("updateItems", function(data, cb)
 end)
 
 -- Este já existe, apenas garantindo que está implementado corretamente
-RegisterNuiCallback("close", function(data, cb)
+RegisterNUICallback("close", function(data, cb)
     closeAllNuis()
     SendStandardMessage("close", false)
     cb(true)
@@ -655,7 +695,7 @@ end
 --     end
 -- end)
 
-RegisterNuiCallback("updateItems", function(data, cb)
+RegisterNUICallback("updateItems", function(data, cb)
     local type = data.type
     
     if type == "arenas" then
@@ -673,7 +713,7 @@ end)
 
 local isJoiningArena = false
 
-RegisterNuiCallback("joinMap", function(data, cb)
+RegisterNUICallback("joinMap", function(data, cb)
     if isJoiningArena then 
         cb(false)
         return
@@ -706,7 +746,7 @@ RegisterNuiCallback("joinMap", function(data, cb)
     cb(success)
 end)
 
-RegisterNuiCallback("favoriteMap", function(data, cb)
+RegisterNUICallback("favoriteMap", function(data, cb)
     vSERVER.toggleFavoriteArena(data.map.id)
     cb(true)
 end)
