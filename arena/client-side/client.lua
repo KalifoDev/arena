@@ -21,7 +21,6 @@ AddEventHandler("marko_:collectGarbage", function()
 	collectgarbage("collect")
 end)
 
-
 RegisterNetEvent("mirtin_survival:updateArena")
 AddEventHandler("mirtin_survival:updateArena", function(boolean)
     -- print("updateArena: ", boolean)
@@ -46,21 +45,6 @@ RegisterCommand("arena", function()
             else
                 TriggerEvent('Notify', 'negado', 'Você não pode entrar com arma na arena.', 3000)
             end
-        end
-    end
-end)
-
--- Comando para ir ao modo Aimlab (apenas teleporte simples)
-RegisterCommand("aimlab", function()
-    if in_arena == 0 and not IN_PVP then
-        local ped = PlayerPedId()
-        if GetEntityHealth(ped) > 101 then
-            DoScreenFadeOut(500)
-            Citizen.Wait(500)
-            SetEntityCoordsNoOffset(ped, 6976.78, 916.68, 763.63, false, false, false)
-            SetEntityHeading(ped, 183.55)
-            Citizen.Wait(500)
-            DoScreenFadeIn(500)
         end
     end
 end)
