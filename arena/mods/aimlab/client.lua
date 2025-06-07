@@ -1,548 +1,98 @@
--- local enterCoords = nil
--- pedProperties = { 
--- 	isPlaying = false,
--- 	isCurrentPedAlive = nil, 
--- 	isRolling = false,
--- 	isMoving = false,
--- 	statistics = {
--- 		hits = 0,
--- 		time = "0:00"
--- 	},
--- 	coords = {
--- 		vec3(6972.09,903.1,763.63),
--- 		vec3(6974.63,903.9,763.63),
--- 		vec3(6977.45,904.84,763.63),
--- 		vec3(6980.12,905.71,763.63),
--- 		vec3(6983.65,906.97,763.63),
--- 		vec3(6988.37,908.66,763.63),
--- 		vec3(6989.44,905.88,763.63),
--- 		vec3(6986.94,904.88,763.63),
--- 		vec3(6983.3,903.49,763.63),
--- 		vec3(6979.88,902.39,763.63),
--- 		vec3(6977.05,901.54,763.63),
--- 		vec3(6973.59,900.38,763.63),
--- 		vec3(6974.54,896.98,763.63),
--- 		vec3(6978.57,897.39,763.63),
--- 		vec3(6982.37,898.61,763.63),
--- 		vec3(6985.08,899.64,763.63),
--- 		vec3(6988.5,901.05,763.63),
--- 		vec3(6991.22,902.09,763.63),
--- 		vec3(6991.63,897.9,763.63),
--- 		vec3(6988.25,896.83,763.63),
--- 		vec3(6984.77,895.73,763.63),
--- 		vec3(6981.09,894.57,763.63),
--- 		vec3(6978.19,893.65,763.63),
--- 		-- vec3(6980.63, 912.09, 763.63),
--- 		-- vec3(6989.47, 912.82, 763.63),
--- 		-- vec3(7001.47, 913.03, 763.63),
--- 		-- vec3(7006.47, 913.54, 763.63),
--- 		-- vec3(6980.29, 916.11, 763.63),
--- 		-- vec3(6987.33, 917.33, 763.63),
--- 		-- vec3(6996.12, 917.90, 763.63),
--- 		-- vec3(7005.71, 918.39, 763.78),
--- 		-- vec3(7009.05, 917.91, 763.63),
+local aimlabCoords = vector3(6976.78, 916.68, 763.63)
+local aimHeading = 183.55
 
--- 	},
--- 	animations = {
--- 		"combatroll_bwd_p1_135", 
--- 		"combatroll_bwd_p1_180", 
--- 		"combatroll_bwd_p2_135", 
--- 		"combatroll_fwd_p1_00", 
--- 		"combatroll_fwd_p1_135", 
--- 		"combatroll_fwd_p1_45", 
--- 		"combatroll_fwd_p1_90"
--- 	},
--- 	resetAllStuff = function()
--- 		pedProperties.statistics.time = "0:00"
--- 		pedProperties.statistics.hits = 0
--- 	end,
--- 	playAnimation = function(ped,type)
--- 		if type == "roll" then
--- 			local animSelected = pedProperties.animations[math.random(#pedProperties.animations)]
-	
--- 			RequestAnimDict(animSelected)
--- 			TaskPlayAnim(ped, "move_strafe@roll_fps", animSelected, 8.0, -8.0, -1, 0, 0, nil, nil, nil)
--- 			Citizen.Wait(1200)
--- 			pedProperties.isCurrentPedAlive = nil
--- 			DeleteEntity(ped)
--- 		elseif type == "move_and_roll" then
--- 			local direction = math.random(2)
--- 			if direction == 1 then SetEntityHeading(ped, 160.0) else SetEntityHeading(ped, 346.0) end
-	
--- 			RequestAnimDict("anim@heists@narcotics@trash")
--- 			TaskPlayAnim(ped, "anim@heists@narcotics@trash", "run", 8.0, -8.0, -1, 0, 0, nil, nil, nil)
--- 			Citizen.Wait(1200)
+local targetCoords = {
+    vector3(6972.09,903.10,763.63),
+    vector3(6974.63,903.90,763.63),
+    vector3(6977.45,904.84,763.63),
+    vector3(6980.12,905.71,763.63),
+    vector3(6983.65,906.97,763.63),
+    vector3(6988.37,908.66,763.63),
+    vector3(6989.44,905.88,763.63),
+    vector3(6986.94,904.88,763.63),
+    vector3(6983.30,903.49,763.63),
+    vector3(6979.88,902.39,763.63)
+}
 
--- 			local animSelected = pedProperties.animations[math.random(#pedProperties.animations)]
--- 			RequestAnimDict(animSelected)
--- 			TaskPlayAnim(ped, "move_strafe@roll_fps", animSelected, 8.0, -8.0, -1, 0, 0, nil, nil, nil)
--- 			Citizen.Wait(1200)
+local aimlabActive = false
+local spawnedPeds = {}
+local enterCoords = nil
+local targetModel = GetHashKey("s_m_y_cop_01")
 
--- 			pedProperties.isCurrentPedAlive = nil
--- 			DeleteEntity(ped)
--- 		elseif type == "move" then
--- 			local direction = math.random(2)
--- 			if direction == 1 then SetEntityHeading(ped, 160.0) else SetEntityHeading(ped, 346.0) end
-	
--- 			RequestAnimDict("anim@heists@narcotics@trash")
--- 			TaskPlayAnim(ped, "anim@heists@narcotics@trash", "run", 8.0, -8.0, -1, 0, 0, nil, nil, nil)
--- 			Citizen.Wait(1200)
--- 			pedProperties.isCurrentPedAlive = nil
--- 			DeleteEntity(ped)
--- 		end
--- 	end,
--- 	startPlayingThread = function()
--- 		Citizen.CreateThread(function()
--- 			while (pedProperties.isPlaying) do
+local function cleanupTargets()
+    for _, ped in ipairs(spawnedPeds) do
+        if DoesEntityExist(ped) then
+            DeleteEntity(ped)
+        end
+    end
+    spawnedPeds = {}
+end
 
--- 				if pedProperties.isRolling then
--- 					DrawTextInScreen("~r~[E] ~w~Para ligar/desativar o rolamento",0,0.3,0.93,0.3,255,255,255,255)
--- 				else
--- 					DrawTextInScreen("~g~[E] ~w~Para ligar/desativar o rolamento",0,0.3,0.93,0.3,255,255,255,255)
--- 				end
+local function spawnTargets()
+    cleanupTargets()
+    RequestModel(targetModel)
+    while not HasModelLoaded(targetModel) do
+        Wait(10)
+    end
 
--- 				if pedProperties.isMoving then
--- 					DrawTextInScreen("~r~[U] ~w~Para ligar/desativar a movimentação",0,0.5,0.93,0.3,255,255,255,255)
--- 				else
--- 					DrawTextInScreen("~g~[U] ~w~Para ligar/desativar a movimentação",0,0.5,0.93,0.3,255,255,255,255)
--- 				end
-				
--- 				DrawTextInScreen("~b~[F] ~w~Sair",0,0.7,0.93,0.3,255,255,255,255)
--- 				DrawRCT(0.005,0.957,0.16,0.035)
--- 				DrawTXT("Tempo",0.01,0.959,false,0.45)
--- 				DrawTXT(pedProperties.statistics.time,0.01,0.959,true,0.45)
--- 				DrawRCT(0.005,0.92,0.16,0.035)
--- 				DrawTXT("Pontuação",0.01,0.922,false,0.45)
--- 				DrawTXT(pedProperties.statistics.hits.." kills",0.01,0.922,true,0.45)
+    for _, coord in ipairs(targetCoords) do
+        local ped = CreatePed(4, targetModel, coord.x, coord.y, coord.z, 0.0, false, true)
+        SetPedCanRagdoll(ped, true)
+        SetEntityInvincible(ped, false)
+        GiveWeaponToPed(ped, GetHashKey("WEAPON_PISTOL"), 250, true, true)
+        SetPedDropsWeaponsWhenDead(ped, false)
+        table.insert(spawnedPeds, ped)
+    end
+end
 
--- 				if IsControlJustPressed(0, 38) then
--- 					pedProperties.isRolling = not pedProperties.isRolling
--- 				elseif IsControlJustPressed(0,303) then
--- 					pedProperties.isMoving = not pedProperties.isMoving
--- 				elseif IsControlJustPressed(0,23) then
--- 					pedProperties.isPlaying = false
--- 					pedProperties.resetAllStuff()
--- 					if enterCoords ~= nil then
--- 						SetEntityCoordsNoOffset(PlayerPedId(), enterCoords.x, enterCoords.y, enterCoords.z, 0, 0, 1)
--- 						enterCoords = nil
--- 					else
--- 						SetEntityCoordsNoOffset(PlayerPedId(), -427.72, 1115.86, 326.79, 0, 0, 1)
--- 					end
--- 					TriggerServerEvent("space-core:server:exitAimLab","npc")
--- 				end
-		
--- 				Citizen.Wait(0)
--- 			end
--- 		end)
--- 	end,
--- 	startMonitoringThread = function()
--- 		Citizen.CreateThread(function()
--- 			while (pedProperties.isPlaying) do
--- 				if pedProperties.isCurrentPedAlive then
--- 					local ped = pedProperties.isCurrentPedAlive
--- 					local pedHealth = GetEntityHealth(ped)
--- 					if pedHealth == 0 and ped then
--- 						DeleteEntity(ped)
--- 						pedProperties.isCurrentPedAlive = nil
--- 						pedProperties.spawnPed()
--- 						pedProperties.statistics.hits = pedProperties.statistics.hits + 1
--- 					end
--- 				end
+RegisterCommand('aimlab', function()
+    if aimlabActive then return end
+    local ped = PlayerPedId()
+    if IsPedDeadOrDying(ped) then return end
+    enterCoords = GetEntityCoords(ped)
 
--- 				-- local weapon = GetSelectedPedWeapon(PlayerPedId())
--- 				-- local _, ammo = GetAmmoInClip(PlayerPedId(), weapon)
--- 				-- local maxAmmo = GetMaxAmmoInClip(PlayerPedId(), weapon)
--- 				-- if ammo < maxAmmo then
--- 				-- 	SetAmmoInClip(PlayerPedId(), weapon, maxAmmo)
--- 				-- end
+    DoScreenFadeOut(500)
+    Wait(500)
+    SetEntityCoordsNoOffset(ped, aimlabCoords, false, false, false)
+    SetEntityHeading(ped, aimHeading)
+    Wait(500)
+    DoScreenFadeIn(500)
 
--- 				Citizen.Wait(500)
--- 			end
--- 		end)
+    aimlabActive = true
+    spawnTargets()
+end)
 
--- 		Citizen.CreateThread(function()
--- 			local timer = 0
--- 			while (pedProperties.isPlaying) do
--- 				timer = timer + 1
--- 				pedProperties.statistics.time = math.floor(timer/60)..":"..string.format("%02.f",math.floor(timer-math.floor(timer/60)*60))
--- 				Citizen.Wait(1000)
--- 			end
--- 		end)
--- 	end,
--- 	spawnPed = function()
--- 		Citizen.CreateThread(function()
--- 			local coordSelected = pedProperties.coords[math.random(#pedProperties.coords)]
-		
--- 			while (not pedProperties.isCurrentPedAlive) do
--- 				RequestModel(GetHashKey("cs_beverly"))
--- 				while not HasModelLoaded(GetHashKey("cs_beverly")) do
--- 					Citizen.Wait(100)
--- 				end
-		
--- 				local ped = CreatePed(4, GetHashKey("cs_beverly"), coordSelected.x, coordSelected.y, coordSelected.z - 1, 183.55, false, true)
--- 				pedProperties.isCurrentPedAlive = ped
--- 				SetBlockingOfNonTemporaryEvents(ped, true)
-	
--- 				if pedProperties.isMoving and pedProperties.isRolling then
--- 					Citizen.Wait(math.random(200,400))
--- 					pedProperties.playAnimation(ped, "move_and_roll")
--- 				elseif pedProperties.isRolling then
--- 					Citizen.Wait(math.random(200,400))
--- 					pedProperties.playAnimation(ped, "roll")
--- 				elseif pedProperties.isMoving then
--- 					Citizen.Wait(math.random(200,400))
--- 					pedProperties.playAnimation(ped, "move")
--- 				end
-	
--- 				Citizen.Wait(1000)
--- 			end
--- 		end)
--- 	end
--- }
+RegisterCommand('leaveaimlab', function()
+    if not aimlabActive then return end
+    local ped = PlayerPedId()
+    DoScreenFadeOut(500)
+    Wait(500)
+    cleanupTargets()
+    if enterCoords then
+        SetEntityCoordsNoOffset(ped, enterCoords, false, false, false)
+    end
+    Wait(500)
+    DoScreenFadeIn(500)
+    aimlabActive = false
+end)
 
--- baloonProperties = {
--- 	isPlaying = false,
--- 	targets = {},
--- 	statistics = {
--- 		total = 0,
--- 		hits = 0,
--- 		time = "0:00"
--- 	},
--- 	currentArea = 2,
--- 	currentTargets = 1,
--- 	coords = {
--- 		[2] = {
--- 			vector3(7728.93, 7591.89, 778.66),
--- 			vector3(7728.93, 7591.89, 780.44),
--- 			vector3(7727.083, 7592.756, 778.66),
--- 			vector3(7727.083, 7592.756, 780.44)
--- 		},
--- 		[3] = {
--- 			vector3(7728.93, 7591.89, 778.66),
--- 			vector3(7728.93, 7591.89, 776.88),
--- 			vector3(7728.93, 7591.89, 780.37),
--- 			vector3(7730.398, 7591.214, 778.66),
--- 			vector3(7730.398, 7591.214, 780.44),
--- 			vector3(7730.398, 7591.214, 782.15),
--- 			vector3(7727.327, 7592.637, 778.66),
--- 			vector3(7727.327, 7592.637, 780.44),
--- 			vector3(7727.327, 7592.637, 782.15)
--- 		},
--- 		[4] = {
--- 			vector3(7728.93, 7591.89, 778.66),
--- 			vector3(7728.93, 7591.89, 780.44),
--- 			vector3(7727.083, 7592.756, 778.66),
--- 			vector3(7727.083, 7592.756, 780.44),
--- 			vector3(7725.269, 7593.585, 778.66),
--- 			vector3(7725.269, 7593.585, 780.44),
--- 			vector3(7730.801, 7591.014, 778.66),
--- 			vector3(7730.801, 7591.014, 780.44),
--- 			vector3(7730.801, 7591.014, 782.2579),
--- 			vector3(7730.801, 7591.014, 784.2379),
--- 			vector3(7728.93, 7591.89, 782.2579),
--- 			vector3(7728.93, 7591.89, 784.2379),
--- 			vector3(7727.083, 7592.756, 784.2379),
--- 			vector3(7727.083, 7592.756, 782.2579),
--- 			vector3(7725.269, 7593.585, 782.2579),
--- 			vector3(7725.269, 7593.585, 784.2379)
--- 		},
--- 		[5] = {
--- 			vector3(7728.93, 7591.89, 778.66),
--- 			vector3(7728.93, 7591.89, 779.16),
--- 			vector3(7728.93, 7591.89, 779.66),
--- 			vector3(7728.93, 7591.89, 780.16),
--- 			vector3(7728.93, 7591.89, 780.66),
--- 			vector3(7730.398, 7591.214, 779.16),
--- 			vector3(7730.398, 7591.214, 779.66),
--- 			vector3(7730.398, 7591.214, 780.16),
--- 			vector3(7727.327, 7592.637, 779.16),
--- 			vector3(7727.327, 7592.637, 779.66),
--- 			vector3(7727.327, 7592.637, 780.16),
--- 			vector3(7732.034, 7590.445, 779.17),
--- 			vector3(7732.034, 7590.445, 779.67),
--- 			vector3(7732.034, 7590.445, 780.17),
--- 			vector3(7725.665, 7593.392, 779.17),
--- 			vector3(7725.665, 7593.392, 779.67),
--- 			vector3(7725.665, 7593.392, 780.17),
--- 			vector3(7732.034, 7590.445, 780.67),
--- 			vector3(7730.398, 7591.214, 780.67),
--- 			vector3(7727.327, 7592.637, 780.67),
--- 			vector3(7725.665, 7593.392, 780.67),
--- 			vector3(7725.665, 7593.392, 780.17),
--- 			vector3(7727.327, 7592.637, 780.17),
--- 			vector3(7730.398, 7591.214, 780.17),
--- 			vector3(7732.034, 7590.445, 780.17)
-			
--- 		},
--- 	},
--- 	resetAllStuff = function()
--- 		baloonProperties.statistics.time = "0:00"
--- 		baloonProperties.statistics.total = 0
--- 		baloonProperties.statistics.hits = 0
--- 		baloonProperties.targets = {}
--- 		baloonProperties.currentArea = 2
--- 		baloonProperties.currentTargets = 1
--- 		baloonProperties.deleteAllObjects()
--- 	end,
--- 	createObject = function() 
--- 		local currentTarget = nil
--- 		while not currentTarget or baloonProperties.targets[currentTarget]  do
--- 			local countCoordsByArea = #baloonProperties.coords[baloonProperties.currentArea]
--- 			currentTarget = math.random(1,countCoordsByArea)
--- 		end
-
--- 		baloonProperties.targets[currentTarget] = CreateObjectNoOffset(-131025346,baloonProperties.coords[baloonProperties.currentArea][currentTarget],false,true,false)
--- 		FreezeEntityPosition(baloonProperties.targets[currentTarget], true)
--- 	end,
--- 	deleteAllObjects = function()
--- 		for _, target in pairs(baloonProperties.targets) do
--- 			DeleteEntity(target)
--- 		end
--- 		baloonProperties.targets = {}
--- 	end,
--- 	reloadObjects = function()
--- 		baloonProperties.deleteAllObjects()
--- 		for i = 1, baloonProperties.currentTargets do
--- 			baloonProperties.createObject()
--- 		end
--- 	end,
--- 	startPlayingThread = function()
--- 		Citizen.CreateThread(function()
--- 			local temp = {}
--- 			while (baloonProperties.isPlaying) do
--- 				temp = baloonProperties.targets or {}
--- 				for num, target in pairs(temp) do
--- 					if DoesEntityExist(target) and GetEntityHealth(target) ~= 1000 then
--- 						DeleteEntity(target)
--- 						baloonProperties.createObject()
--- 						baloonProperties.targets[num] = nil
--- 						baloonProperties.statistics.hits = baloonProperties.statistics.hits + 1
--- 					end
--- 				end
-
--- 				DrawTextInScreen("~b~[E] ~w~Alterar área ("..baloonProperties.currentArea.."x"..baloonProperties.currentArea.."/5x5)",0,0.3,0.93,0.3,255,255,255,255)
--- 				DrawTextInScreen("~b~[U] ~w~Alternar quantidade ("..baloonProperties.currentTargets.."/3)",0,0.5,0.93,0.3,255,255,255,255)
--- 				DrawTextInScreen("~b~[F] ~w~Sair",0,0.7,0.93,0.3,255,255,255,255)
-
--- 				DrawRCT(0.005,0.957,0.16,0.035)
--- 				DrawTXT("Tempo",0.01,0.959,false,0.45)
--- 				DrawTXT(baloonProperties.statistics.time,0.01,0.959,true,0.45)
--- 				DrawRCT(0.005,0.92,0.16,0.035)
--- 				DrawTXT("Pontuação",0.01,0.922,false,0.45)
--- 				DrawTXT(baloonProperties.statistics.hits.." de "..baloonProperties.statistics.total.." tiros ".. (baloonProperties.statistics.total > 0 and " ("..math.floor((baloonProperties.statistics.hits*100)/baloonProperties.statistics.total).."%)" or ""),0.01,0.922,true,0.45)
-
--- 				if IsControlJustPressed(0, 38) then
--- 					if baloonProperties.currentArea < 5 then 
--- 						baloonProperties.currentArea = baloonProperties.currentArea + 1 
--- 					else 
--- 						baloonProperties.currentArea = 2 
--- 						if baloonProperties.currentTargets == 4 then 
--- 							baloonProperties.currentTargets = 3 
--- 						end
--- 					end
--- 					baloonProperties.reloadObjects()
--- 				elseif IsControlJustPressed(0,303) then
--- 					if baloonProperties.currentTargets < 4 then 
--- 						baloonProperties.currentTargets = baloonProperties.currentTargets + 1
--- 						if baloonProperties.currentTargets == 4 and baloonProperties.currentArea == 2 then 
--- 							baloonProperties.currentTargets = 1 
--- 						end
--- 					else 
--- 						baloonProperties.currentTargets = 1 
--- 					end
--- 					baloonProperties.reloadObjects()
--- 				elseif IsControlJustPressed(0,23) then
--- 					baloonProperties.isPlaying = false
--- 					baloonProperties.resetAllStuff()
--- 					if enterCoords ~= nil then
--- 						SetEntityCoordsNoOffset(PlayerPedId(), enterCoords.x, enterCoords.y, enterCoords.z, 0, 0, 1)
--- 						enterCoords = nil
--- 					else
--- 						SetEntityCoordsNoOffset(PlayerPedId(), -427.72, 1115.86, 326.79, 0, 0, 1)
--- 					end
--- 					TriggerServerEvent("space-core:server:exitAimLab","baloon")
--- 				end			
-
--- 				Citizen.Wait(0)
--- 			end
--- 		end)
--- 	end,
--- 	startControllerThread = function()
--- 		-- Citizen.CreateThread(function()
--- 		-- 	while (baloonProperties.isPlaying) do
--- 		-- 		local ped = PlayerPedId()
--- 		-- 		local weapon = GetSelectedPedWeapon(ped)
--- 		-- 		local _, ammo = GetAmmoInClip(ped, weapon)
--- 		-- 		local maxAmmo = GetMaxAmmoInClip(ped, weapon)
--- 		-- 		if ammo < maxAmmo then
--- 		-- 			SetAmmoInClip(ped, weapon, maxAmmo)
--- 		-- 		end
-
--- 		-- 		Citizen.Wait(10)
--- 		-- 	end
--- 		-- end)
-
--- 		Citizen.CreateThread(function()
--- 			local timer = 0
--- 			while (baloonProperties.isPlaying) do
--- 				timer = timer + 1
--- 				baloonProperties.statistics.time = math.floor(timer/60)..":"..string.format("%02.f",math.floor(timer-math.floor(timer/60)*60))
--- 				Citizen.Wait(1000)
--- 			end
--- 		end)
--- 	end
--- }
-
--- local function getWeapons(weapons)
--- 	local player = PlayerPedId() 
--- 	for k,v in pairs(weapons) do
--- 		if k and v then
--- 			return true
--- 		end
--- 	end
-
--- 	return nil
--- end
-
--- AddEventHandler("CEventGunShot", function(entities, eventEntity, args)
--- 	if baloonProperties.isPlaying then
--- 		baloonProperties.statistics.total = baloonProperties.statistics.total + 1
--- 	end
--- end)
-
--- RegisterNetEvent("space-core:client:enterAimLab",function(type)
--- 	local ped = PlayerPedId()
-
--- 	enterCoords = GetEntityCoords(ped)
--- 	LocalPlayer.state.InAimLab = true;
-
--- 	if type == "npc" then
--- 		DoScreenFadeOut(1000)
--- 		while not IsScreenFadedOut() do
--- 			Citizen.Wait(100)
--- 		end
--- 		SetEntityCoordsNoOffset(ped, 6976.78,916.68,763.63, 0, 0, 1)
--- 		pedProperties.isPlaying = true
--- 		pedProperties.spawnPed()
--- 		Citizen.Wait(500)
--- 		pedProperties.startPlayingThread()
--- 		pedProperties.startMonitoringThread()
-
--- 		Citizen.Wait(4000)
-
--- 		DoScreenFadeIn(1000)
--- 		FreezeEntityPosition(ped, false)
-
--- 	elseif type == "baloon" or type == "balao" then
--- 		DoScreenFadeOut(1000)
--- 		while not IsScreenFadedOut() do
--- 			Citizen.Wait(100)
--- 		end
-
--- 		SetEntityCoordsNoOffset(ped, 7711.35,7589.58,778.66, 0, 0, 1)
--- 		SetEntityHeading(ped, 355.11)
--- 		FreezeEntityPosition(ped, true)
--- 		while not HasCollisionLoadedAroundEntity(ped) do
--- 			Citizen.Wait(10) 
--- 		end
-
--- 		baloonProperties.isPlaying = true
-
--- 		for i = 1, baloonProperties.currentTargets do
--- 			baloonProperties.createObject()
--- 		end
-
--- 		baloonProperties.startPlayingThread()
--- 		baloonProperties.startControllerThread()
-
--- 		Citizen.Wait(4000)
-
--- 		DoScreenFadeIn(1000)
--- 		FreezeEntityPosition(ped, false)
--- 	end
--- end)
-
--- RegisterNetEvent("space-core:client:exitAimLab", function(type)
--- 	LocalPlayer.state.InAimLab = false;
--- 	if type == "reset" then
--- 		baloonProperties.isPlaying = false
--- 		baloonProperties.resetAllStuff()
--- 		pedProperties.isPlaying = false
--- 		pedProperties.resetAllStuff()
--- 		RemoveAllPedWeapons(PlayerPedId(), true)
--- 		if enterCoords ~= nil then
--- 			SetEntityCoordsNoOffset(PlayerPedId(), enterCoords.x, enterCoords.y, enterCoords.z, 0, 0, 1)
--- 			enterCoords = nil
--- 		else
--- 			SetEntityCoordsNoOffset(PlayerPedId(), -427.72, 1115.86, 326.79, 0, 0, 1)
--- 		end
--- 		TriggerServerEvent("space-core:server:exitAimLab","reset")
--- 	end
--- end)
-
--- function IsInAimLab()
--- 	if pedProperties.isPlaying or baloonProperties.isPlaying then
--- 		return true
--- 	end
--- 	return false
--- end
-
--- exports("IsInAimLab", IsInAimLab)
-
--- local Txt = { w3d = World3dToScreen2d, Font = SetTextFont, Proportional = SetTextProportional, Scale = SetTextScale, Colour = SetTextColour, Dropshadow = SetTextDropshadow, Edge = SetTextEdge, DropShadow = SetTextDropShadow, Outline = SetTextOutline, Justification = SetTextJustification, Entry = SetTextEntry, Centre = SetTextCentre, Wrap = SetTextWrap, ComponentString = AddTextComponentString, Draw = DrawText }
-
--- function DrawTXT(text,x,y,justification,scale,center)
--- 	Txt.Font(4)
--- 	Txt.Scale(scale,scale)
--- 	Txt.Colour(255,255,255,230)
--- 	Txt.Outline()
--- 	if justification then 
--- 	Txt.Justification(2)
--- 	Txt.Wrap(0.03,0.16) end
--- 	if center then
--- 	Txt.Centre(1) end
--- 	Txt.Entry("STRING")
--- 	Txt.ComponentString(text)
--- 	Txt.Draw(x,y)
--- end
-
--- function DrawRCT(x,y,width,height)
--- 	DrawRect(x+width/2,y+height/2,width,height,0,161,255,100)
--- end
-
--- function table_includes(t, o)
--- 	for k,v in pairs(t) do
--- 		if v == o then
--- 			return k
--- 		end
--- 	end
--- 	return false
--- end
-
--- DrawText3Ds = function(x,y,z,text)
--- 	SetDrawOrigin(x, y, z, 0);
--- 	SetTextFont(0)
--- 	SetTextProportional(0)
--- 	SetTextScale(0.25,0.25)
--- 	SetTextColour(255,255,255,150)
--- 	SetTextDropshadow(0, 0, 0, 0, 255)
--- 	SetTextEdge(2, 0, 0, 0, 150)
--- 	SetTextDropShadow()
--- 	SetTextOutline()
--- 	SetTextEntry("STRING")
--- 	SetTextCentre(1)
--- 	AddTextComponentString(text)
--- 	DrawText(0.0, 0.0)
--- 	ClearDrawOrigin()
--- end
-
--- DrawTextInScreen = function(text,font,x,y,scale,r,g,b,a)
--- 	SetTextFont(font)
--- 	SetTextScale(scale,scale)
--- 	SetTextColour(r,g,b,a)
--- 	SetTextOutline()
--- 	SetTextCentre(1)
--- 	SetTextEntry("STRING")
--- 	AddTextComponentString(text)
--- 	DrawText(x,y)
--- end
+-- Respawn any dead targets every few seconds
+Citizen.CreateThread(function()
+    while true do
+        if aimlabActive then
+            for i, ped in ipairs(spawnedPeds) do
+                if not DoesEntityExist(ped) or IsEntityDead(ped) then
+                    local coord = targetCoords[i]
+                    DeleteEntity(ped)
+                    local newPed = CreatePed(4, targetModel, coord.x, coord.y, coord.z, 0.0, false, true)
+                    SetPedCanRagdoll(newPed, true)
+                    SetEntityInvincible(newPed, false)
+                    GiveWeaponToPed(newPed, GetHashKey("WEAPON_PISTOL"), 250, true, true)
+                    SetPedDropsWeaponsWhenDead(newPed, false)
+                    spawnedPeds[i] = newPed
+                end
+            end
+        end
+        Wait(1000)
+    end
+end)
