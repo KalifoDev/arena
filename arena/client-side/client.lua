@@ -516,7 +516,7 @@ DrawTextInScreen = function(text,font,x,y,scale,r,g,b,a)
 end
 
 -- Callbacks documentados no readme
-RegisterNuiCallback("getItems", function(data, cb)
+RegisterNUICallback("getItems", function(data, cb)
     local type = data.type
     if type == "arenas" then
         -- local arenas = vSERVER.getArenas() or cachedArenas or {}
@@ -528,7 +528,7 @@ RegisterNuiCallback("getItems", function(data, cb)
     end
 end)
 
-RegisterNuiCallback("updateItems", function(data, cb)
+RegisterNUICallback("updateItems", function(data, cb)
     local type = data.type
     if type == "arenas" then
         local arenas = vSERVER.getArenas() or cachedArenas or {}
@@ -540,7 +540,7 @@ RegisterNuiCallback("updateItems", function(data, cb)
 end)
 
 -- Este já existe, apenas garantindo que está implementado corretamente
-RegisterNuiCallback("close", function(data, cb)
+RegisterNUICallback("close", function(data, cb)
     closeAllNuis()
     SendStandardMessage("close", false)
     cb(true)
@@ -695,7 +695,7 @@ end
 --     end
 -- end)
 
-RegisterNuiCallback("updateItems", function(data, cb)
+RegisterNUICallback("updateItems", function(data, cb)
     local type = data.type
     
     if type == "arenas" then
@@ -713,7 +713,7 @@ end)
 
 local isJoiningArena = false
 
-RegisterNuiCallback("joinMap", function(data, cb)
+RegisterNUICallback("joinMap", function(data, cb)
     if isJoiningArena then 
         cb(false)
         return
@@ -746,7 +746,7 @@ RegisterNuiCallback("joinMap", function(data, cb)
     cb(success)
 end)
 
-RegisterNuiCallback("favoriteMap", function(data, cb)
+RegisterNUICallback("favoriteMap", function(data, cb)
     vSERVER.toggleFavoriteArena(data.map.id)
     cb(true)
 end)
