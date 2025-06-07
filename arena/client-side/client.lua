@@ -1,3 +1,9 @@
+-- Ensure vRP/vSERVER interfaces exist even if config_client didn't load first
+local Tunnel = module("vrp", "lib/Tunnel")
+local Proxy = module("vrp", "lib/Proxy")
+vRP = vRP or Proxy.getInterface("vRP")
+vSERVER = vSERVER or Tunnel.getInterface("mirtin_arena")
+
 local in_arena = 0
 local time_arena = 0
 local openedCoords
@@ -24,6 +30,39 @@ end)
 
 RegisterNetEvent("arena:playSound", function(url)
     SendReactMessage("playSound", url)
+end)
+
+-- Comando para abrir a interface da arena manualmente
+RegisterCommand("arena", function()
+    if in_arena == 0 and not IN_PVP then
+        local ped = PlayerPedId()
+        if GetEntityHealth(ped) > 101 then
+            local weapons = vRP.getWeapons()
+            if json.encode(weapons) == '[]' then
+                local coords = GetEntityCoords(ped)
+                openedCoords = coords
+                vSERVER._atualizarCoords(coords)
+                openNui()
+            else
+                TriggerEvent('Notify', 'negado', 'Você não pode entrar com arma na arena.', 3000)
+            end
+        end
+    end
+end)
+
+-- Comando para ir ao modo Aimlab (apenas teleporte simples)
+RegisterCommand("aimlab", function()
+    if in_arena == 0 and not IN_PVP then
+        local ped = PlayerPedId()
+        if GetEntityHealth(ped) > 101 then
+            DoScreenFadeOut(500)
+            Citizen.Wait(500)
+            SetEntityCoordsNoOffset(ped, 6976.78, 916.68, 763.63, false, false, false)
+            SetEntityHeading(ped, 183.55)
+            Citizen.Wait(500)
+            DoScreenFadeIn(500)
+        end
+    end
 end)
 
 
@@ -241,15 +280,16 @@ end
 -- Atualizar função openNui para usar o formato padrão documentado no readme
 function openNui()
     local currentTime = GetGameTimer()
-    
+
     cachedArenas = vSERVER.showNuiArena()
-    
+
     if currentTime - lastRankTableTime >= 180000 then
         lastRankTableTime = currentTime
         rankData = vSERVER.CreateNewRankTable()
     end
-    
+
     SendStandardMessage("lobby:open", {})
+    sendNuiInfos()
     SetNuiFocus(true, true)
 end
 
